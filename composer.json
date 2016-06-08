@@ -1,0 +1,12 @@
+{
+    "name": "salva/yuki",
+    "require": {
+        "mailgun/mailgun-php": "^2.0"
+    },
+    "authors": [
+        {
+            "name": "salva",
+            "email": "s@salvadorp.com"
+        }
+    ]
+}
