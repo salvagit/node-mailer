@@ -25,10 +25,10 @@ fs.readFile(contacts, function (err, data) {
    console.log(uniqueEmails.length);
 
    for (var k in uniqueEmails) {
-     // console.log(uniqueEmails[k]);
+     // console.log(typeof uniqueEmails[k]);
+     send(uniqueEmails);
    }
 
-   send('salvador.palmiciano@gmail.com');
 
 });
 
