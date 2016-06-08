@@ -6,6 +6,13 @@ var contacts = "contacts/compre1.csv";
 var validEmails = [],
     invalidEmails = [];
 
+var api_key = 'key-60153829e1a3844d37cb80320bf6aa89';
+var domain = 'salvadorp.com';
+var mailgun = require('mailgun-js')({apiKey: api_key, domain: domain});
+var fileStream = fs.createReadStream('template/mail.html');
+
+var mailcomposer = require('mailcomposer');
+
 fs.readFile(contacts, function (err, data) {
 
    if (err) return console.error(err);
@@ -24,12 +31,26 @@ fs.readFile(contacts, function (err, data) {
    console.log(invalidEmails.length);
    console.log(uniqueEmails.length);
 
-   for (var k in uniqueEmails) {
-     // console.log(typeof uniqueEmails[k]);
-     send(uniqueEmails);
+   // SEND!
+   // for (var k in uniqueEmails.slice(0,50)) { send(uniqueEmails[k]); }
+
+   var ue = [];
+   //for (var k in uniqueEmails) { ue.push(uniqueEmails[k]); }
+
+   // testing ..
+   var arr = ['s@salvadorp.com','salvador.palmiciano@gmail.com','spalmiciano@panareadigital.com','escencial@gmail.com','s@salva.io'];
+   var tt = [];
+   /*
+   for (var m in arr) {
+     console.log(arr[m]);
+     tt[arr[m]] = [];
    }
+*/
+   // console.log(uniqueEmails.toString());
 
+   send('spalmiciano@panareadigital.com');
 
+   // send(tt);
 });
 
 function getVals (line) {
@@ -53,46 +74,35 @@ function getVals (line) {
 }
 
 function send (email) {
-  var api_key = 'key-60153829e1a3844d37cb80320bf6aa89';
-  var domain = 'salvadorp.com';
-  var mailgun = require('mailgun-js')({apiKey: api_key, domain: domain});
-  var fileStream = fs.createReadStream('template/mail.html');
-/*
-  var data = {
-    from: 'Shiatsunuad <shiatsunuadtai@gmail.com>',
-    to: email,
-    subject: 'Equilibrar tu calor interno con masaje con hierbas al vapor.',
-    html: fileStream
-  };
 
-  mailgun.messages().send(data, function (error, body) {
-    console.log(body);
+  // console.log(email);
+  return new Promise(function(resolve, reject) {
+
+    var mail = mailcomposer({
+      from: 'Shiatsunuad <shiatsunuadtai@gmail.com>',
+      to: email,
+      subject: 'Equilibrar tu calor interno con masaje con hierbas al vapor.',
+      html: fileStream
+    });
+
+    mail.build(function(mailBuildError, message) {
+
+        var dataToSend = {
+            to: email,
+            message: message.toString('ascii')
+        };
+/**/
+        mailgun.messages().sendMime(dataToSend, function (sendError, body) {
+            if (sendError) {
+                console.error(sendError);
+                return reject(sendError);
+            } else {
+              console.log(body);
+              return resolve(body);
+            }
+        });
+/**/
+    });
   });
-*/
 
-  var mailcomposer = require('mailcomposer');
-
-  var mail = mailcomposer({
-    from: 'Shiatsunuad <shiatsunuadtai@gmail.com>',
-    to: email,
-    subject: 'Equilibrar tu calor interno con masaje con hierbas al vapor.',
-    html: fileStream
-  });
-
-  mail.build(function(mailBuildError, message) {
-
-      var dataToSend = {
-          to: email,
-          message: message.toString('ascii')
-      };
-
-      mailgun.messages().sendMime(dataToSend, function (sendError, body) {
-          if (sendError) {
-              console.log(sendError);
-              return;
-          } else {
-            console.log(body);
-          }
-      });
-  });
 }
