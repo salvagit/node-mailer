@@ -1,87 +1,71 @@
+'use stricts';
 
-var fs = require('fs');
+/**
+ * @todo implements eventemmiter.
+ * @todo implements mustache.
+ * @todo implements actions parameters.
+ */
 
-var contacts = "contacts/compre1.csv";
-
-var validEmails = [],
-    invalidEmails = [];
-
-var api_key = 'key-60153829e1a3844d37cb80320bf6aa89';
-var domain = 'salvadorp.com';
-var mailgun = require('mailgun-js')({apiKey: api_key, domain: domain});
+var fs = require('fs'),
+    mailcomposer = require('mailcomposer');
+var conf = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+var mailgun = require('mailgun-js')({apiKey: conf.mg.api_key, domain: conf.mg.domain});
+// contacts file.
+var contacts = "contacts.csv";
+// declare empty arrays.
+var validEmails = [], invalidEmails = [], uniqueEmails = [], recipientVars = [];
+// get template.
 var fileStream = fs.createReadStream('template/mail.html');
 
-var mailcomposer = require('mailcomposer');
-
 fs.readFile(contacts, function (err, data) {
-
    if (err) return console.error(err);
-
-   var sdata = data.toString(),
-       lines = sdata.split('\n');
-
-   // get emails
-   for (var i in lines) { getVals(lines[i]); }
-
-   var uniqueEmails = validEmails.filter(function(elem, pos) {
-     return validEmails.indexOf(elem) == pos;
-   });
-
-   console.log(validEmails.length);
-   console.log(invalidEmails.length);
-   console.log(uniqueEmails.length);
-
-   // SEND!
-   // for (var k in uniqueEmails.slice(0,50)) { send(uniqueEmails[k]); }
-
-   var ue = [];
-   //for (var k in uniqueEmails) { ue.push(uniqueEmails[k]); }
-
-   // testing ..
-   var arr = ['s@salvadorp.com','salvador.palmiciano@gmail.com','spalmiciano@panareadigital.com','escencial@gmail.com','s@salva.io'];
-   var tt = [];
-   /*
-   for (var m in arr) {
-     console.log(arr[m]);
-     tt[arr[m]] = [];
-   }
-*/
-   // console.log(uniqueEmails.toString());
-
-   send('spalmiciano@panareadigital.com');
-
-   // send(tt);
+   else parseData(data);
 });
 
-function getVals (line) {
+/**
+* Send Mail.
+*/
+// send(validEmails, recipientVars);
 
-  function validateEmail(email) {
-    var re = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
-    return re.test(email);
-  }
-
-  var sline = line.split(',');
-  for (var i in sline) {
-    if (sline[i].indexOf('@') > -1) {
-      var email = sline[i];
-      if (validateEmail(email)) {
-        validEmails.push(email);
-      } else {
-        invalidEmails.push(email);
-      }
-    }
+function parseData (data) {
+  var sdata = data.toString(),
+  lines = sdata.split('\n');
+  // get emails
+  for (var i in lines) { getEmails(lines[i]); }
+  uniqueEmails = validEmails.filter(function(elem, pos) {
+    return validEmails.indexOf(elem) == pos;
+  });
+  console.log('validEmails: ' + validEmails.length);
+  console.log('uniqueEmails: ' + uniqueEmails.length);
+  console.log('invalidEmails: ' + invalidEmails.length);
+  for (var k in uniqueEmails) {
+    var m = uniqueEmails[k].replace(/\0/g, '');
+    recipientVars[m] = {id : +k + 1};
   }
 }
 
-function send (email) {
+function getEmails (line) {
+  function validateEmail (email) {
+    var re = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+    return re.test(email);
+  }
+  var sline = line.split(',');
+  for (var i in sline) {
+    if (sline[i].indexOf('@') > -1) {
+      var email = sline[i].replace(/\0/g, '');
+      if (validateEmail(email)) validEmails.push(email);
+      else invalidEmails.push(email);
+    }
+  }
+}
+function send (email, recipientVars) {
 
-  // console.log(email);
   return new Promise(function(resolve, reject) {
 
     var mail = mailcomposer({
-      from: 'Shiatsunuad <shiatsunuadtai@gmail.com>',
+      from: conf.email.from,
       to: email,
-      subject: 'Equilibrar tu calor interno con masaje con hierbas al vapor.',
+      subject: conf.email.subject,
       html: fileStream
     });
 
@@ -91,7 +75,8 @@ function send (email) {
             to: email,
             message: message.toString('ascii')
         };
-/**/
+        if (recipientVars) dataToSend['recipient-variables'] = JSON.stringify(recipientVars);
+
         mailgun.messages().sendMime(dataToSend, function (sendError, body) {
             if (sendError) {
                 console.error(sendError);
@@ -101,8 +86,7 @@ function send (email) {
               return resolve(body);
             }
         });
-/**/
+
     });
   });
-
 }
