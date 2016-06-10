@@ -1,6 +1,6 @@
 .DS_Store
-node_modules/
 */.DS_Store
 contacts/
-
-/vendor/
+node_modules/
+template/
+config.json
