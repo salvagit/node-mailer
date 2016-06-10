@@ -1,0 +1,6 @@
+.DS_Store
+*/.DS_Store
+contacts/
+node_modules/
+template/
+config.json
