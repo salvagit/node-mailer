@@ -1,0 +1,10 @@
+{
+      "mg": {
+        "api_key" : "MAILGUN_API_KEY",
+        "domain" : "MAILGUN_DOMAIN"
+      },
+      "email": {
+        "from": "EMAI_FROM",
+        "subject": "SUBJECT_EXAMPLE"
+      }
+}
