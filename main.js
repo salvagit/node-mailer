@@ -11,37 +11,111 @@ var fs = require('fs'),
 var conf = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 var mailgun = require('mailgun-js')({apiKey: conf.mg.api_key, domain: conf.mg.domain});
 // contacts file.
-var contacts = "contacts.csv";
+var contacts = "contacts/v2/contacts.csv";
 // declare empty arrays.
 var validEmails = [], invalidEmails = [], uniqueEmails = [], recipientVars = [];
 // get template.
-var fileStream = fs.createReadStream('template/mail.html');
+var fileStream = fs.createReadStream('template/silla/mail.html');
 
 fs.readFile(contacts, function (err, data) {
    if (err) return console.error(err);
-   else parseData(data);
+   else {
+     parseData(data)
+     .then(function() {
+       /**
+       * Send Mail.
+       */
+       // send(validEmails, recipientVars);
+       // send('s@salva.io');
+
+       //console.log(uniqueEmails.slice(0,999).toString, recipientVars.slice(0,999).toString());
+
+       // console.log(JSON.parse(uniqueEmails.slice(0,999)), JSON.parse(recipientVars.slice(0,999).toString()));
+
+       /** /
+       send(uniqueEmails.slice(0,999).toString(), recipientVars.slice(0,999).toString())
+       .then(function(){
+         send(uniqueEmails.slice(1000,1999).toString(), recipientVars.slice(1000,1999).toString());
+       })
+       .then(function() {
+         send(uniqueEmails.slice(2000,2999).toString(), recipientVars.slice(2000,2999).toString());
+       })
+       .then(function() {
+         send(uniqueEmails.slice(3000,3999).toString(), recipientVars.slice(3000,3999).toString());
+       })
+       .then(function() {
+         send(uniqueEmails.slice(4000, 4006).toString(), recipientVars.slice(4000, 4006).toString());
+       })
+       .then(function() {
+         console.log('i know promises.');
+       });
+       /**/
+
+       var arr = ['s@salvadorp.com','s@salva.io','spalmiciano@panareadigital.com'];
+       // console.log('chancleta');
+/*
+       arr.map(function (mail) {
+         console.log(mail);
+       });
+*/
+      var promiseFor = Promise.method(function(condition, action, value) {
+          if (!condition(value)) return value; console.log(1);
+          return action(value).then(promiseFor.bind(null, condition, action)); console.log(2);
+      });
+
+      var promiseWhile = Promise.method(function(condition, action) {
+          if (!condition()) return;
+          return action().then(promiseWhile.bind(null, condition, action));
+      });
+
+      promiseWhile(function(count) {
+console.log(count);
+          return count < arr.length;
+      }, function(count) {
+          return console.log(arr[count])
+                   .then(function(res) {
+                       logger.log(res);
+                       return ++count;
+                   });
+      }, 0).then(console.log.bind(console, 'all done'));
+
+/*
+       for (var i = 0; i < arr.length; i++) {
+         console.log(arr[i]);
+         send(arr[i]).then();
+       }
+*/
+       // send(['s@salvadorp.com','s@salva.io','spalmiciano@panareadigital.com'].toString());
+
+     });
+    }
 });
 
-/**
-* Send Mail.
-*/
-// send(validEmails, recipientVars);
-
 function parseData (data) {
-  var sdata = data.toString(),
-  lines = sdata.split('\n');
-  // get emails
-  for (var i in lines) { getEmails(lines[i]); }
-  uniqueEmails = validEmails.filter(function(elem, pos) {
-    return validEmails.indexOf(elem) == pos;
+
+  return new Promise(function(resolve, reject) {
+
+    var sdata = data.toString(),
+    lines = sdata.split('\n');
+
+    // get emails
+    for (var i in lines) { getEmails(lines[i]); }
+    uniqueEmails = validEmails.filter(function(elem, pos) {
+      return validEmails.indexOf(elem) == pos;
+    });
+
+    console.log('validEmails: ' + validEmails.length);
+    console.log('uniqueEmails: ' + uniqueEmails.length);
+    console.log('invalidEmails: ' + invalidEmails.length);
+
+    for (var k in uniqueEmails) {
+      var m = uniqueEmails[k].replace(/\0/g, '');
+      recipientVars[m] = {id : +k + 1};
+    }
+
+    resolve();
   });
-  console.log('validEmails: ' + validEmails.length);
-  console.log('uniqueEmails: ' + uniqueEmails.length);
-  console.log('invalidEmails: ' + invalidEmails.length);
-  for (var k in uniqueEmails) {
-    var m = uniqueEmails[k].replace(/\0/g, '');
-    recipientVars[m] = {id : +k + 1};
-  }
+
 }
 
 function getEmails (line) {
@@ -64,7 +138,8 @@ function send (email, recipientVars) {
 
     var mail = mailcomposer({
       from: conf.email.from,
-      to: email,
+      to: '<>',
+      bco: email,
       subject: conf.email.subject,
       html: fileStream
     });
@@ -72,7 +147,8 @@ function send (email, recipientVars) {
     mail.build(function(mailBuildError, message) {
 
         var dataToSend = {
-            to: email,
+            to: '<>',
+            bco: email,
             message: message.toString('ascii')
         };
         if (recipientVars) dataToSend['recipient-variables'] = JSON.stringify(recipientVars);
