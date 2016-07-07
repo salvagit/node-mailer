@@ -1,6 +1,7 @@
 .DS_Store
 */.DS_Store
-contacts/*
+contacts/
 node_modules/
 template/
 config.json
+npm-debug.log
